@@ -1,6 +1,6 @@
 {
-    "name": "image_upload",
-    "short_name": "image_upload",
+    "name": "flutter_image_upload_demo",
+    "short_name": "flutter_image_upload_demo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

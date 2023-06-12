@@ -1,4 +1,4 @@
-package com.example.image_upload
+package com.example.flutter_image_upload_demo
 
 import io.flutter.embedding.android.FlutterActivity
 

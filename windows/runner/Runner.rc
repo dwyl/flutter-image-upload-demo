@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "image_upload" "\0"
+            VALUE "FileDescription", "flutter_image_upload_demo" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "image_upload" "\0"
+            VALUE "InternalName", "flutter_image_upload_demo" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2023 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "image_upload.exe" "\0"
-            VALUE "ProductName", "image_upload" "\0"
+            VALUE "OriginalFilename", "flutter_image_upload_demo.exe" "\0"
+            VALUE "ProductName", "flutter_image_upload_demo" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
