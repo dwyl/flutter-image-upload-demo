@@ -1,30 +1,53 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_image_upload_demo/http.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:http/http.dart' as http;
+
+import 'package:file_picker/file_picker.dart';
 
 import 'package:flutter_image_upload_demo/main.dart';
 
+// importing mocks
+import 'widget_test.mocks.dart';
+
+@GenerateMocks([http.MultipartRequest, ImageFilePicker])
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('Initial mount', (WidgetTester tester) async {
+
+    // Mocks
+    final requestMock = MockMultipartRequest();
+    final filePickerMock = MockImageFilePicker();
+
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(imageFilePicker: filePickerMock, multipartRequest: requestMock,));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Verify that the page loads properly
+    expect(find.text('No image has been uploaded.'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('Pressing the button should show dialog and person cancels it', (WidgetTester tester) async {
+    // Mocks
+    final requestMock = MockMultipartRequest();
+    final filePickerMock = MockImageFilePicker();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Set mock behaviour
+    when(filePickerMock
+        .pickImage())
+    .thenAnswer((_) async => Future<FilePickerResult?>.value(null));
+
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(MyApp(imageFilePicker: filePickerMock, multipartRequest: requestMock,));
+
+    final button = find.byKey(buttonKey);
+
+    // Tap button
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+
+    // Verify that no image is shown 
+    expect(find.text('No image has been uploaded.'), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
   });
 }

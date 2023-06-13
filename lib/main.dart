@@ -9,31 +9,46 @@ import 'package:http/http.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 
+import './http.dart';
+
+final buttonKey = UniqueKey();
+
 // coverage:ignore-start
 void main() {
-  runApp(const MyApp());
+
+  // Request object to make request.
+  // Paste URL of the API here. 
+  MultipartRequest request = http.MultipartRequest('POST', Uri.parse('http://localhost:4000/api/images'));
+
+  runApp( MyApp(imageFilePicker: ImageFilePicker(), multipartRequest: request));
 }
 // coverage:ignore-end
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.imageFilePicker, required this.multipartRequest});
 
-  // This widget is the root of your application.
+  final ImageFilePicker imageFilePicker;
+  final MultipartRequest multipartRequest;
+
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
       title: 'Flutter Image Upload Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
         useMaterial3: true,
       ),
-      home: const MyHomePage(),
+      home: MyHomePage(imageFilePicker: imageFilePicker, multipartRequest: multipartRequest),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+  const MyHomePage({super.key, required this.imageFilePicker, required this.multipartRequest});
+
+  final ImageFilePicker imageFilePicker;
+  final MultipartRequest multipartRequest;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -42,35 +57,15 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   String? imageURL;
 
+  /// Called when the image is pressed.
+  /// It invokes `openImagePickerDialog`, which opens a dialog to select an image and makes the request to upload the image.
   void _onImagePressed() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
+    String? url = await openImagePickerDialog(widget.imageFilePicker, widget.multipartRequest);
 
-    if (result != null) {
-      // Get file and make request
-      PlatformFile platformFile = result.files.first;
-      File file = File(result.files.first.path!);
-
-      // Create multipart/form data request from file
-      final uri = Uri.parse('http://localhost:4000/api/images');
-
-      MultipartRequest request = http.MultipartRequest('POST', uri);
-      final bytes = await file.readAsBytes();
-      final httpImage =
-          http.MultipartFile.fromBytes('image', bytes, contentType: MediaType.parse(lookupMimeType(file.path)!), filename: platformFile.name);
-      request.files.add(httpImage);
-
-      // Send request
-      final response = await request.send();
-
-      // Get response of request
-      Response responseStream = await http.Response.fromStream(response);
-      final responseData = json.decode(responseStream.body);
-
+    if (url != null) {
       setState(() {
-        imageURL = responseData['url'];
+        imageURL = url;
       });
-    } else {
-      // User canceled the picker
     }
   }
 
@@ -93,6 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Padding(
                   padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
                   child: ElevatedButton(
+                    key: buttonKey,
                     onPressed: _onImagePressed,
                     child: const Text("Upload image"),
                   ),
