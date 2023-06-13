@@ -24,27 +24,27 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Image Upload Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Image Upload Demo'),
+      home: const MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  String? imageURL;
+
   void _onImagePressed() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
-    
+
     if (result != null) {
       // Get file and make request
       PlatformFile platformFile = result.files.first;
@@ -65,8 +65,10 @@ class _MyHomePageState extends State<MyHomePage> {
       // Get response of request
       Response responseStream = await http.Response.fromStream(response);
       final responseData = json.decode(responseStream.body);
-      
-      final bruh = "";
+
+      setState(() {
+        imageURL = responseData['url'];
+      });
     } else {
       // User canceled the picker
     }
@@ -77,16 +79,66 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: const Text("Flutter Image Upload Demo"),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             // Elevated button to open file picker
-            ElevatedButton(
-              onPressed: _onImagePressed,
-              child: const Text("Upload image"),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
+                  child: ElevatedButton(
+                    onPressed: _onImagePressed,
+                    child: const Text("Upload image"),
+                  ),
+                ),
+              ],
+            ),
+
+            // Render image
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: imageURL != null
+                    // Image URL is defined
+                    ? [
+                        const Padding(
+                            padding: EdgeInsets.only(bottom: 8.0),
+                            child: Column(children: [
+                              Text(
+                                "Here's your uploaded image!",
+                                style: TextStyle(
+                                  fontSize: 24.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              Text("It's living on the web."),
+                            ])),
+                        Image.network(
+                          imageURL!,
+                          fit: BoxFit.fill,
+                          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
+                        ),
+                      ]
+                    :
+                    // No image URL is defined
+                    [const Text("No image has been uploaded.")],
+              ),
             )
           ],
         ),
