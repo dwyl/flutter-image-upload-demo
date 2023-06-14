@@ -13,6 +13,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 
 import 'package:flutter_image_upload_demo/main.dart';
+import 'package:network_image_mock/network_image_mock.dart';
 
 // importing mocks
 import 'widget_test.mocks.dart';
@@ -75,42 +76,48 @@ void main() {
   });
 
   testWidgets('Pressing the button should show dialog and person uploads image', (WidgetTester tester) async {
-    /// We are overriding the `IO` because `readAsBytes` is skipped on tests.
-    /// We use the mocked file so the test can be executed correctly.
-    IOOverrides.runZoned(
-      () async {
-        // Mocks
-        final clientMock = MockClient();
-        final filePickerMock = MockImageFilePicker();
 
-        // Set mock behaviour for `filePickerMock`
-        final List<PlatformFile> listMockFiles = [PlatformFile(name: 'image.png', size: 200, path: "some_path")];
+    /// Because we are using `Image.network`, which throws `400` on tests,
+    /// we use https://github.com/stelynx/network_image_mock to override this behaviour
+    /// so the test doesn't crash.
+    mockNetworkImagesFor(() =>
 
-        when(filePickerMock.pickImage()).thenAnswer((_) async => Future<FilePickerResult?>.value(FilePickerResult(listMockFiles)));
+        /// We are overriding the `IO` because `readAsBytes` is skipped on tests.
+        /// We use the mocked file so the test can be executed correctly.
+        IOOverrides.runZoned(
+          () async {
+            // Mocks
+            final clientMock = MockClient();
+            final filePickerMock = MockImageFilePicker();
 
-        // Set mock behaviour for `requestMock`
-        const body = "{\"url\":\"return_url\"}";
-        final bodyBytes = utf8.encode(body);
-        when(clientMock.send(any)).thenAnswer((_) async => http.StreamedResponse(Stream<List<int>>.fromIterable([bodyBytes]), 200));
+            // Set mock behaviour for `filePickerMock`
+            final List<PlatformFile> listMockFiles = [PlatformFile(name: 'image.png', size: 200, path: "some_path")];
 
-        // Build our app and trigger a frame.
-        await tester.pumpWidget(MyApp(
-          imageFilePicker: filePickerMock,
-          client: clientMock,
+            when(filePickerMock.pickImage()).thenAnswer((_) async => Future<FilePickerResult?>.value(FilePickerResult(listMockFiles)));
+
+            // Set mock behaviour for `requestMock`
+            const body = "{\"url\":\"return_url\"}";
+            final bodyBytes = utf8.encode(body);
+            when(clientMock.send(any)).thenAnswer((_) async => http.StreamedResponse(Stream<List<int>>.fromIterable([bodyBytes]), 200));
+
+            // Build our app and trigger a frame.
+            await tester.pumpWidget(MyApp(
+              imageFilePicker: filePickerMock,
+              client: clientMock,
+            ));
+
+            final button = find.byKey(buttonKey);
+            final image = find.byKey(imageKey);
+
+            // Tap button
+            await tester.tap(button);
+            await tester.pumpAndSettle();
+
+            // Verify that image is shown
+            expect(find.text('No image has been uploaded.'), findsNothing);
+            expect(image, findsOneWidget);
+          },
+          createFile: (_) => FileMock(),
         ));
-
-        final button = find.byKey(buttonKey);
-        final image = find.byKey(imageKey);
-
-        // Tap button
-        await tester.tap(button);
-        await tester.pumpAndSettle();
-
-        // Verify that no image is shown
-        expect(find.text('No image has been uploaded.'), findsNothing);
-        expect(image, findsOneWidget);
-      },
-      createFile: (_) => FileMock(),
-    );
   });
 }
