@@ -12,10 +12,10 @@ import 'package:mime/mime.dart';
 import './http.dart';
 
 final buttonKey = UniqueKey();
+final imageKey = UniqueKey();
 
 // coverage:ignore-start
 void main() {
-
   runApp( MyApp(imageFilePicker: ImageFilePicker(), client: http.Client()));
 }
 // coverage:ignore-end
@@ -113,6 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               Text("It's living on the web."),
                             ])),
                         Image.network(
+                          key: imageKey,
                           imageURL!,
                           fit: BoxFit.fill,
                           loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
