@@ -16,19 +16,15 @@ final buttonKey = UniqueKey();
 // coverage:ignore-start
 void main() {
 
-  // Request object to make request.
-  // Paste URL of the API here. 
-  MultipartRequest request = http.MultipartRequest('POST', Uri.parse('http://localhost:4000/api/images'));
-
-  runApp( MyApp(imageFilePicker: ImageFilePicker(), multipartRequest: request));
+  runApp( MyApp(imageFilePicker: ImageFilePicker(), client: http.Client()));
 }
 // coverage:ignore-end
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.imageFilePicker, required this.multipartRequest});
+  const MyApp({super.key, required this.imageFilePicker, required this.client});
 
   final ImageFilePicker imageFilePicker;
-  final MultipartRequest multipartRequest;
+  final http.Client client;
 
   @override
   Widget build(BuildContext context) {
@@ -39,16 +35,16 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
         useMaterial3: true,
       ),
-      home: MyHomePage(imageFilePicker: imageFilePicker, multipartRequest: multipartRequest),
+      home: MyHomePage(imageFilePicker: imageFilePicker, client: client),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.imageFilePicker, required this.multipartRequest});
+  const MyHomePage({super.key, required this.imageFilePicker, required this.client});
 
   final ImageFilePicker imageFilePicker;
-  final MultipartRequest multipartRequest;
+  final http.Client client;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -60,7 +56,7 @@ class _MyHomePageState extends State<MyHomePage> {
   /// Called when the image is pressed.
   /// It invokes `openImagePickerDialog`, which opens a dialog to select an image and makes the request to upload the image.
   void _onImagePressed() async {
-    String? url = await openImagePickerDialog(widget.imageFilePicker, widget.multipartRequest);
+    String? url = await openImagePickerDialog(widget.imageFilePicker, widget.client);
 
     if (url != null) {
       setState(() {
