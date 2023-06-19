@@ -29,6 +29,8 @@ in a simple `Phoenix` Todo List App.
   - [2. Changing `MyHomePage` so it receives mockable dependencies](#2-changing-myhomepage-so-it-receives-mockable-dependencies)
   - [3. Changing the `MyHomePage` widget view.](#3-changing-the-myhomepage-widget-view)
   - [4. Testing our app](#4-testing-our-app)
+  - [5. (Optional) Click on image to open the URL in the browser](#5-optional-click-on-image-to-open-the-url-in-the-browser)
+  - [5.1 Changing tests](#51-changing-tests)
 
 
 # Why? 🤷‍
@@ -714,4 +716,141 @@ and making our tests pass properly!
 If you execute `flutter test --coverage`,
 all tests should pass! ✅
 
+
+## 5. (Optional) Click on image to open the URL in the browser
+
+Because the image is stored on the web,
+*and we know where it is stored*,
+it'd be useful for the person using the app
+to be redirected to the URL when clicking on the image.
+
+For this, we are going to need to use the 
+[`url_launcher`](https://pub.dev/packages/url_launcher)
+package.
+To install it, simply run `flutter pub add url_launcher`.
+
+Now, let's use it!
+In `lib/main.dart`,
+change the `build()` function 
+of the `_MyHomePageState` class.
+
+```dart
+Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text("Flutter Image Upload Demo"),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            // Elevated button to open file picker
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
+                  child: ElevatedButton(
+                    key: buttonKey,
+                    onPressed: _onImagePressed,
+                    child: const Text("Upload image"),
+                  ),
+                ),
+              ],
+            ),
+
+            // Render image
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: imageURL != null
+                    // Image URL is defined
+                    ? [
+                        const Padding(
+                            padding: EdgeInsets.only(bottom: 8.0, right: 8.0, left: 8.0),
+                            child: Column(children: [
+                              Text(
+                                "Here's your uploaded image!",
+                                style: TextStyle(
+                                  fontSize: 24.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              Text("It's living on the web. Click on the picture to open in the browser.", textAlign: TextAlign.center,),
+                            ])),
+                        GestureDetector(
+                          onTap: () async {
+                            final Uri url = Uri.parse(imageURL!);
+                            await launchUrl(url);
+                          },
+                          child: Image.network(
+                            key: imageKey,
+                            imageURL!,
+                            fit: BoxFit.fill,
+                            loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ]
+                    :
+                    // No image URL is defined
+                    [const Text("No image has been uploaded.")],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+```
+
+We've wrapped `Image.network`
+with a [`GestureDetector` class](https://api.flutter.dev/flutter/widgets/GestureDetector-class.html).
+When pressed,
+we use the `launchUrl` function from the package
+we've just imported to launch a web browser
+with the URL of the image `imageURL`.
+
+And that's it!
+We've also changed the text 
+to tell the person that he can click the image
+to open it in the browser.
+
+If you run the app,
+everything should properly work!
+
+![final_with_urlloader](https://github.com/dwyl/flutter-image-upload-demo/assets/17494745/cc05ac09-f30d-4714-b490-808ff317a005)
+
+
+## 5.1 Changing tests
+
+Because this redirection is handled by the OS of the device,
+and is *out of context of the `Flutter` app*,
+[it's impossible to unit test this behaviour](https://stackoverflow.com/questions/54869155/how-to-test-flutter-url-launcher-that-email-app-opens).
+However, we can get the coverage back to 100%
+by simply tapping on the image during the test.
+
+Therefore, in `test/widget_test.dart`,
+in the `'Pressing the button should show dialog and person uploads image'` test,
+add these two lines at the end of it.
+
+```dart
+    // Tap image
+    await tester.tap(image);
+    await tester.pumpAndSettle();
+```
+
+And that's it!
+All tests should successfully run without a hitch! 🏃‍♂️
 
