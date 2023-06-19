@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 import './http.dart';
 
@@ -93,7 +94,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     // Image URL is defined
                     ? [
                         const Padding(
-                            padding: EdgeInsets.only(bottom: 8.0),
+                            padding: EdgeInsets.only(bottom: 8.0, right: 8.0, left: 8.0),
                             child: Column(children: [
                               Text(
                                 "Here's your uploaded image!",
@@ -103,22 +104,28 @@ class _MyHomePageState extends State<MyHomePage> {
                                   color: Colors.black54,
                                 ),
                               ),
-                              Text("It's living on the web."),
+                              Text("It's living on the web. Click on the picture to open in the browser.", textAlign: TextAlign.center,),
                             ])),
-                        Image.network(
-                          key: imageKey,
-                          imageURL!,
-                          fit: BoxFit.fill,
-                          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                    : null,
-                              ),
-                            );
+                        GestureDetector(
+                          onTap: () async {
+                            final Uri url = Uri.parse(imageURL!);
+                            await launchUrl(url);
                           },
+                          child: Image.network(
+                            key: imageKey,
+                            imageURL!,
+                            fit: BoxFit.fill,
+                            loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ]
                     :

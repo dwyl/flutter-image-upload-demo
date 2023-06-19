@@ -75,7 +75,6 @@ void main() {
   });
 
   testWidgets('Pressing the button should show dialog and person uploads image', (WidgetTester tester) async {
-
     /// Because we are using `Image.network`, which throws `400` on tests,
     /// we use https://github.com/stelynx/network_image_mock to override this behaviour
     /// so the test doesn't crash.
@@ -115,6 +114,10 @@ void main() {
             // Verify that image is shown
             expect(find.text('No image has been uploaded.'), findsNothing);
             expect(image, findsOneWidget);
+
+            // Tap image
+            await tester.tap(image);
+            await tester.pumpAndSettle();
           },
           createFile: (_) => FileMock(),
         ));
