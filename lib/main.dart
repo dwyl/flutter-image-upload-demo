@@ -10,7 +10,7 @@ final imageKey = UniqueKey();
 
 // coverage:ignore-start
 void main() {
-  runApp( MyApp(imageFilePicker: ImageFilePicker(), client: http.Client()));
+  runApp(MyApp(imageFilePicker: ImageFilePicker(), client: http.Client()));
 }
 // coverage:ignore-end
 
@@ -22,7 +22,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return MaterialApp(
       title: 'Flutter Image Upload Demo',
       theme: ThemeData(
@@ -46,16 +45,49 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String? imageURL;
+  bool isLoading = false;
 
   /// Called when the image is pressed.
   /// It invokes `openImagePickerDialog`, which opens a dialog to select an image and makes the request to upload the image.
   void _onImagePressed() async {
+    setState(() {
+      isLoading = true;
+    });
+
     String? url = await openImagePickerDialog(widget.imageFilePicker, widget.client);
 
     if (url != null) {
       setState(() {
         imageURL = url;
+        isLoading = false;
       });
+    }
+  }
+
+  Widget renderImage() {
+    if (isLoading) {
+      return const CircularProgressIndicator();
+    } else {
+      return GestureDetector(
+        onTap: () async {
+          final Uri url = Uri.parse(imageURL!);
+          await launchUrl(url);
+        },
+        child: Image.network(
+          key: imageKey,
+          imageURL!,
+          fit: BoxFit.fill,
+          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value:
+                    loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
+              ),
+            );
+          },
+        ),
+      );
     }
   }
 
@@ -104,29 +136,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                   color: Colors.black54,
                                 ),
                               ),
-                              Text("It's living on the web. Click on the picture to open in the browser.", textAlign: TextAlign.center,),
+                              Text(
+                                "It's living on the web. Click on the picture to open in the browser.",
+                                textAlign: TextAlign.center,
+                              ),
                             ])),
-                        GestureDetector(
-                          onTap: () async {
-                            final Uri url = Uri.parse(imageURL!);
-                            await launchUrl(url);
-                          },
-                          child: Image.network(
-                            key: imageKey,
-                            imageURL!,
-                            fit: BoxFit.fill,
-                            loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+                        renderImage(),
                       ]
                     :
                     // No image URL is defined

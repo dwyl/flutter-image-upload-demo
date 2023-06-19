@@ -31,6 +31,7 @@ in a simple `Phoenix` Todo List App.
   - [4. Testing our app](#4-testing-our-app)
   - [5. (Optional) Click on image to open the URL in the browser](#5-optional-click-on-image-to-open-the-url-in-the-browser)
   - [5.1 Changing tests](#51-changing-tests)
+  - [6. (Optional) Adding progress circle while requesting API](#6-optional-adding-progress-circle-while-requesting-api)
 
 
 # Why? 🤷‍
@@ -853,4 +854,147 @@ add these two lines at the end of it.
 
 And that's it!
 All tests should successfully run without a hitch! 🏃‍♂️
+
+
+## 6. (Optional) Adding progress circle while requesting API
+
+Currently, when the person chooses an image,
+there's a delay for the image to be shown.
+This is because the request to the API occurs.
+
+In order to let the person know the request is in-progress,
+let's add a simple progress circle!
+
+Open `lib/main.dart`
+and change `_MyHomePageState` to the following.
+
+```dart
+class _MyHomePageState extends State<MyHomePage> {
+  String? imageURL;
+  bool isLoading = false;
+
+  /// Called when the image is pressed.
+  /// It invokes `openImagePickerDialog`, which opens a dialog to select an image and makes the request to upload the image.
+  void _onImagePressed() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    String? url = await openImagePickerDialog(widget.imageFilePicker, widget.client);
+
+    if (url != null) {
+      setState(() {
+        imageURL = url;
+        isLoading = false;
+      });
+    }
+  }
+
+  Widget renderImage() {
+    if (isLoading) {
+      return const CircularProgressIndicator();
+    } else {
+      return GestureDetector(
+        onTap: () async {
+          final Uri url = Uri.parse(imageURL!);
+          await launchUrl(url);
+        },
+        child: Image.network(
+          key: imageKey,
+          imageURL!,
+          fit: BoxFit.fill,
+          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value:
+                    loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
+              ),
+            );
+          },
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text("Flutter Image Upload Demo"),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            // Elevated button to open file picker
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
+                  child: ElevatedButton(
+                    key: buttonKey,
+                    onPressed: _onImagePressed,
+                    child: const Text("Upload image"),
+                  ),
+                ),
+              ],
+            ),
+
+            // Render image
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: imageURL != null
+                    // Image URL is defined
+                    ? [
+                        const Padding(
+                            padding: EdgeInsets.only(bottom: 8.0, right: 8.0, left: 8.0),
+                            child: Column(children: [
+                              Text(
+                                "Here's your uploaded image!",
+                                style: TextStyle(
+                                  fontSize: 24.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              Text(
+                                "It's living on the web. Click on the picture to open in the browser.",
+                                textAlign: TextAlign.center,
+                              ),
+                            ])),
+                        renderImage(),
+                      ]
+                    :
+                    // No image URL is defined
+                    [const Text("No image has been uploaded.")],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+We've added an `isLoading` boolean field.
+This is initialized as `false`.
+It's set to `true` whenever the person
+starts the request and set back to `false`
+when the request is finished.
+
+We've created a function called `renderImage()` 
+where we've extracted the `GestureDetector`.
+In this function,
+we are conditionally rendering the image or the loading icon
+according to the `isLoading` field.
+This way, we're showing the `CircularProgressIndicator` widget
+whenever the request is happening!
+
+And it's that simple!
 
