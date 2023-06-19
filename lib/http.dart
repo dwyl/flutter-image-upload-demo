@@ -7,7 +7,7 @@ import 'package:http/http.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 
-const API_URL = 'http://localhost:4000/api/images';
+const API_URL = 'https://imgup.fly.dev/api/images';
 
 // coverage:ignore-start
 /// Image file picker wrapper class
