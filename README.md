@@ -5,8 +5,6 @@
 A showcase of how to upload images to an API
 from a `Flutter` client.
 
-A showcase of using `PaperTrail` 
-in a simple `Phoenix` Todo List App.
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/dwyl/flutter-image-upload-demo/ci.yml?label=build&style=flat-square&branch=main)
 [![codecov.io](https://img.shields.io/codecov/c/github/dwyl/flutter-image-upload-demo/master.svg?style=flat-square)](https://codecov.io/github/dwyl/flutter-image-upload-demo?branch=master)
@@ -39,8 +37,9 @@ in a simple `Phoenix` Todo List App.
 
 After creating a quick SPIKE to upload files to a `Phoenix` server
 in https://github.com/dwyl/imgup,
-the next logical step would be to implement this feature
+the next logical step was implementing this feature
 to call the API from a third-party client, like `Flutter`.
+So here we are!
 
 # What? 💭
 
@@ -293,7 +292,7 @@ we are going to need to create them at a root level.
 > we could use libraries like [`Riverpod`](https://riverpod.dev/)
 > to make this much easier.
 > However, because this is a simple demo,
-> we will refrain of using packages like this.
+> we will refrain from using packages like this.
 
 Therefore,
 open `lib/main.dart`
@@ -502,7 +501,8 @@ Give yourself a pat on the back 🙂.
 Now it's time to test our app.
 If we run `flutter test --coverage`,
 the tests will fail.
-After all, we've made all of these changes.
+After all, we've made all of these changes 
+and haven't touched our tests.
 
 Luckily for us, because we've implemented our app
 *knowing we'd be mocking some of its components*,
