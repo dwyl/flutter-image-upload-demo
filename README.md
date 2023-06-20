@@ -32,6 +32,7 @@ in a simple `Phoenix` Todo List App.
   - [5. (Optional) Click on image to open the URL in the browser](#5-optional-click-on-image-to-open-the-url-in-the-browser)
   - [5.1 Changing tests](#51-changing-tests)
   - [6. (Optional) Adding progress circle while requesting API](#6-optional-adding-progress-circle-while-requesting-api)
+  - [7. (Optional) Showing error text in case API fails](#7-optional-showing-error-text-in-case-api-fails)
 
 
 # Why? 🤷‍
@@ -997,4 +998,223 @@ This way, we're showing the `CircularProgressIndicator` widget
 whenever the request is happening!
 
 And it's that simple!
+
+
+## 7. (Optional) Showing error text in case API fails
+
+As it stands, if the API (for some reason)
+*fails* at uploading the image,
+it will return an error response (that is not HTTP Code `200`).
+
+We should tell the person that something went wrong
+in case this fails.
+For this, we're going to be making a couple of changes.
+
+Head to `lib/http.dart`
+and create a class called `APIResponse`.
+
+```dart
+class APIResponse {
+  final String? url;
+  final int code;
+
+  APIResponse({this.url, required this.code});
+}
+```
+
+The `openImagePickerDialog` function will now return `Future<APIResponse?>`
+and return an instance of this class.
+
+```dart
+    return APIResponse(url: responseData['url'], code: response.statusCode);
+```
+
+Next, go to `lib/main.dart`,
+more specifically `_MyHomePageState`
+and create a field called `errored`.
+
+```dart
+class _MyHomePageState extends State<MyHomePage> {
+  String? imageURL;
+  bool isLoading = false;
+  bool errored = false;
+
+  ...
+}
+```
+
+We're going to change the `_onImagePresseed` and
+`renderImage` functions.
+
+```dart
+void _onImagePressed() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    APIResponse? response = await openImagePickerDialog(widget.imageFilePicker, widget.client);
+
+    if (response == null) {
+      setState(() {
+        errored = false;
+        isLoading = false;
+      });
+    } else if (response.code != 200) {
+      setState(() {
+        errored = true;
+        imageURL = null;
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        errored = false;
+        imageURL = response.url;
+        isLoading = false;
+      });
+    }
+  }
+
+  List<Widget> renderImage() {
+    // If it's loading, show a loading circular indicator
+    if (isLoading) {
+      // coverage:ignore-start
+      return [const CircularProgressIndicator()];
+      // coverage:ignore-end
+    }
+
+    // Check if it's not errored nor an image exists, meaning the person has yet to upload an image
+    else if (!errored && imageURL == null) {
+      return [const Text("No image has been uploaded.", textAlign: TextAlign.center)];
+    }
+
+    // If it errored, we show an error text
+    else if (errored) {
+      return [
+        const Text(
+          "There was an error uploading the image. Check if the API is up.",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.red),
+        )
+      ];
+    }
+
+    // If everything is successful, show the image
+    else {
+      return [
+        const Padding(
+            padding: EdgeInsets.only(bottom: 8.0, right: 8.0, left: 8.0),
+            child: Column(children: [
+              Text(
+                "Here's your uploaded image!",
+                style: TextStyle(
+                  fontSize: 24.0,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black54,
+                ),
+              ),
+              Text(
+                "It's living on the web. Click on the picture to open in the browser.",
+                textAlign: TextAlign.center,
+              ),
+            ])),
+        GestureDetector(
+          onTap: () async {
+            final Uri url = Uri.parse(imageURL!);
+            await launchUrl(url);
+          },
+          child: Image.network(
+            key: imageKey,
+            imageURL!,
+            fit: BoxFit.fill,
+            loadingBuilder: (BuildContext context, child, ImageChunkEvent? loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(
+                child: CircularProgressIndicator(
+                  value:
+                      loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
+                ),
+              );
+            },
+          ),
+        )
+      ];
+    }
+  }
+```
+
+We've made a ew changes.
+Because we get an instance of `APIResponse`,
+we use it to set the fields `errored`, `imageURL` and `isLoading`
+according to what we've received from the API.
+
+Inside `renderImage()`, we render the contents accordingly.
+- If the API errored out, we render a text.
+- If the API returned an URL, we render an image.
+- If the `response` was `null`, it means the person cancelled the operation,
+so we don't do anything.
+
+In the `build` function,
+simply change the `Expanded` widget
+to use the `renderImage` function.
+
+```dart
+Expanded(
+    child: Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: renderImage(),
+    ),
+)
+```
+
+And we're done!
+All that's left is add a test to test this error edge case!
+
+Head to `test/widget_test.dart`
+and add the following test.
+
+```dart
+testWidgets('Pressing the button should show dialog and person uploads image and the API returns error', (WidgetTester tester) async {
+    /// We are overriding the `IO` because `readAsBytes` is skipped on tests.
+    /// We use the mocked file so the test can be executed correctly.
+    IOOverrides.runZoned(
+      () async {
+        // Mocks
+        final clientMock = MockClient();
+        final filePickerMock = MockImageFilePicker();
+
+        // Set mock behaviour for `filePickerMock`
+        final List<PlatformFile> listMockFiles = [PlatformFile(name: 'image.png', size: 200, path: "some_path")];
+
+        when(filePickerMock.pickImage()).thenAnswer((_) async => Future<FilePickerResult?>.value(FilePickerResult(listMockFiles)));
+
+        // Set mock behaviour for `requestMock`, retyping error
+        const body = "{\"error\":\"Couldn\'t upload image.\"}";
+        final bodyBytes = utf8.encode(body);
+        when(clientMock.send(any)).thenAnswer((_) async => http.StreamedResponse(Stream<List<int>>.fromIterable([bodyBytes]), 405));
+
+        // Build our app and trigger a frame.
+        await tester.pumpWidget(MyApp(
+          imageFilePicker: filePickerMock,
+          client: clientMock,
+        ));
+
+        final button = find.byKey(buttonKey);
+
+        // Tap button
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+
+        // Verify that error is shown
+        expect(find.text('There was an error uploading the image. Check if the API is up.'), findsOneWidget);
+      },
+      createFile: (_) => FileMock(),
+    );
+  });
+```
+
+And that's it! 🎉
+
+We are now rendering a simple text stating
+`'There was an error uploading the image. Check if the API is up.'`
+whenever there's an error from the API. 
 

@@ -60,7 +60,6 @@ class _MyHomePageState extends State<MyHomePage> {
     if (response == null) {
       setState(() {
         errored = false;
-        imageURL = null;
         isLoading = false;
       });
     } else if (response.code != 200) {
@@ -78,6 +77,9 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  /// Renders the contents of the image.
+  /// If there's an error, a Text is shown telling the person something went wrong.
+  /// If no image is found, we show a simple Text.
   List<Widget> renderImage() {
     // If it's loading, show a loading circular indicator
     if (isLoading) {
