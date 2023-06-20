@@ -122,4 +122,42 @@ void main() {
           createFile: (_) => FileMock(),
         ));
   });
+
+  testWidgets('Pressing the button should show dialog and person uploads image and the API returns error', (WidgetTester tester) async {
+    /// We are overriding the `IO` because `readAsBytes` is skipped on tests.
+    /// We use the mocked file so the test can be executed correctly.
+    IOOverrides.runZoned(
+      () async {
+        // Mocks
+        final clientMock = MockClient();
+        final filePickerMock = MockImageFilePicker();
+
+        // Set mock behaviour for `filePickerMock`
+        final List<PlatformFile> listMockFiles = [PlatformFile(name: 'image.png', size: 200, path: "some_path")];
+
+        when(filePickerMock.pickImage()).thenAnswer((_) async => Future<FilePickerResult?>.value(FilePickerResult(listMockFiles)));
+
+        // Set mock behaviour for `requestMock`, retyping error
+        const body = "{\"error\":\"Couldn\'t upload image.\"}";
+        final bodyBytes = utf8.encode(body);
+        when(clientMock.send(any)).thenAnswer((_) async => http.StreamedResponse(Stream<List<int>>.fromIterable([bodyBytes]), 405));
+
+        // Build our app and trigger a frame.
+        await tester.pumpWidget(MyApp(
+          imageFilePicker: filePickerMock,
+          client: clientMock,
+        ));
+
+        final button = find.byKey(buttonKey);
+
+        // Tap button
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+
+        // Verify that error is shown
+        expect(find.text('There was an error uploading the image. Check if the API is up.'), findsOneWidget);
+      },
+      createFile: (_) => FileMock(),
+    );
+  });
 }

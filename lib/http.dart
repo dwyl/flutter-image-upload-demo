@@ -16,9 +16,16 @@ class ImageFilePicker {
 }
 // coverage:ignore-end
 
+class APIResponse {
+  final String? url;
+  final int code;
+
+  APIResponse({this.url, required this.code});
+}
+
 /// Opens a dialog [imageFilePicker] and creates  MultipartRequest [request].
 /// In the request, a field 'image' is appended with the chosen image and the public URL of the image is returned in case of success.
-Future<String?> openImagePickerDialog(ImageFilePicker imageFilePicker, http.Client client) async {
+Future<APIResponse?> openImagePickerDialog(ImageFilePicker imageFilePicker, http.Client client) async {
   FilePickerResult? result = await imageFilePicker.pickImage();
   MultipartRequest request = http.MultipartRequest('POST', Uri.parse(API_URL));
 
@@ -40,7 +47,8 @@ Future<String?> openImagePickerDialog(ImageFilePicker imageFilePicker, http.Clie
     Response responseStream = await http.Response.fromStream(response);
     final responseData = json.decode(responseStream.body);
 
-    return responseData['url'];
+    return APIResponse(url: responseData['url'], code: response.statusCode);
+
   } else {
     // User canceled the picker
     return null;

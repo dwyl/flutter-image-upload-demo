@@ -46,6 +46,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   String? imageURL;
   bool isLoading = false;
+  bool errored = false;
 
   /// Called when the image is pressed.
   /// It invokes `openImagePickerDialog`, which opens a dialog to select an image and makes the request to upload the image.
@@ -54,40 +55,93 @@ class _MyHomePageState extends State<MyHomePage> {
       isLoading = true;
     });
 
-    String? url = await openImagePickerDialog(widget.imageFilePicker, widget.client);
+    APIResponse? response = await openImagePickerDialog(widget.imageFilePicker, widget.client);
 
-    if (url != null) {
+    if (response == null) {
       setState(() {
-        imageURL = url;
+        errored = false;
+        imageURL = null;
+        isLoading = false;
+      });
+    } else if (response.code != 200) {
+      setState(() {
+        errored = true;
+        imageURL = null;
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        errored = false;
+        imageURL = response.url;
         isLoading = false;
       });
     }
   }
 
-  Widget renderImage() {
+  List<Widget> renderImage() {
+    // If it's loading, show a loading circular indicator
     if (isLoading) {
-      return const CircularProgressIndicator();
-    } else {
-      return GestureDetector(
-        onTap: () async {
-          final Uri url = Uri.parse(imageURL!);
-          await launchUrl(url);
-        },
-        child: Image.network(
-          key: imageKey,
-          imageURL!,
-          fit: BoxFit.fill,
-          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Center(
-              child: CircularProgressIndicator(
-                value:
-                    loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
+      // coverage:ignore-start
+      return [const CircularProgressIndicator()];
+      // coverage:ignore-end
+    }
+
+    // Check if it's not errored nor an image exists, meaning the person has yet to upload an image
+    else if (!errored && imageURL == null) {
+      return [const Text("No image has been uploaded.", textAlign: TextAlign.center)];
+    }
+
+    // If it errored, we show an error text
+    else if (errored) {
+      return [
+        const Text(
+          "There was an error uploading the image. Check if the API is up.",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.red),
+        )
+      ];
+    }
+
+    // If everything is successful, show the image
+    else {
+      return [
+        const Padding(
+            padding: EdgeInsets.only(bottom: 8.0, right: 8.0, left: 8.0),
+            child: Column(children: [
+              Text(
+                "Here's your uploaded image!",
+                style: TextStyle(
+                  fontSize: 24.0,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black54,
+                ),
               ),
-            );
+              Text(
+                "It's living on the web. Click on the picture to open in the browser.",
+                textAlign: TextAlign.center,
+              ),
+            ])),
+        GestureDetector(
+          onTap: () async {
+            final Uri url = Uri.parse(imageURL!);
+            await launchUrl(url);
           },
-        ),
-      );
+          child: Image.network(
+            key: imageKey,
+            imageURL!,
+            fit: BoxFit.fill,
+            loadingBuilder: (BuildContext context, child, ImageChunkEvent? loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(
+                child: CircularProgressIndicator(
+                  value:
+                      loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
+                ),
+              );
+            },
+          ),
+        )
+      ];
     }
   }
 
@@ -122,30 +176,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: imageURL != null
-                    // Image URL is defined
-                    ? [
-                        const Padding(
-                            padding: EdgeInsets.only(bottom: 8.0, right: 8.0, left: 8.0),
-                            child: Column(children: [
-                              Text(
-                                "Here's your uploaded image!",
-                                style: TextStyle(
-                                  fontSize: 24.0,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              Text(
-                                "It's living on the web. Click on the picture to open in the browser.",
-                                textAlign: TextAlign.center,
-                              ),
-                            ])),
-                        renderImage(),
-                      ]
-                    :
-                    // No image URL is defined
-                    [const Text("No image has been uploaded.")],
+                children: renderImage(),
               ),
             )
           ],
