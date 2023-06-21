@@ -1159,10 +1159,12 @@ to use the `renderImage` function.
 
 ```dart
 Expanded(
+  child: SingleChildScrollView(
     child: Column(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: renderImage(),
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: renderImage(),
     ),
+  ),
 )
 ```
 

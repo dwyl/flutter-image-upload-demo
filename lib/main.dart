@@ -176,9 +176,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
             // Render image
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: renderImage(),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: renderImage(),
+                ),
               ),
             )
           ],
