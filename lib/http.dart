@@ -15,7 +15,15 @@ const API_URL = 'https://imgup.fly.dev/api/images';
 class ImageFilePicker {
   Future<FilePickerResult?> pickImage() => FilePicker.platform.pickFiles(type: FileType.image);
 }
+
+// Platform service class that tells if the platform is web-based or not
+class PlatformService {
+  bool isWebPlatform() {
+    return kIsWeb;
+  }
+}
 // coverage:ignore-end
+
 
 class APIResponse {
   final String? url;
@@ -24,9 +32,10 @@ class APIResponse {
   APIResponse({this.url, required this.code});
 }
 
+
 /// Opens a dialog [imageFilePicker] and creates  MultipartRequest [request].
 /// In the request, a field 'image' is appended with the chosen image and the public URL of the image is returned in case of success.
-Future<APIResponse?> openImagePickerDialog(ImageFilePicker imageFilePicker, http.Client client) async {
+Future<APIResponse?> openImagePickerDialog(ImageFilePicker imageFilePicker, http.Client client, PlatformService platformService) async {
   FilePickerResult? result = await imageFilePicker.pickImage();
   MultipartRequest request = http.MultipartRequest('POST', Uri.parse(API_URL));
 
@@ -37,11 +46,16 @@ Future<APIResponse?> openImagePickerDialog(ImageFilePicker imageFilePicker, http
     // Make request according to the platform.
     // If the platform is web-based, we need to use the `bytes` directly.
     // Otherwise, we can use the `path` to add it to the request
-    if (kIsWeb) {
+    if (platformService.isWebPlatform()) {
       // Read file as bytes
       final bytes = platformFile.bytes;
-      final httpImage = http.MultipartFile.fromBytes('image', bytes!, contentType: MediaType.parse(lookupMimeType('', headerBytes: bytes)!), filename: platformFile.name);
-      request.files.add(httpImage);
+
+      // If it's not empty, we populate the request
+      if (bytes != null) {
+        final httpImage = http.MultipartFile.fromBytes('image', bytes,
+            contentType: MediaType.parse(lookupMimeType('', headerBytes: bytes)!), filename: platformFile.name);
+        request.files.add(httpImage);
+      }
     } else {
       // Read file from the path
       File file = File(result.files.first.path!);

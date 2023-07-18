@@ -942,3 +942,21 @@ class MockFile extends _i1.Mock implements _i3.File {
         returnValue: _i4.Stream<_i3.FileSystemEvent>.empty(),
       ) as _i4.Stream<_i3.FileSystemEvent>);
 }
+
+/// A class which mocks [PlatformService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockPlatformService extends _i1.Mock implements _i7.PlatformService {
+  MockPlatformService() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  bool isWebPlatform() => (super.noSuchMethod(
+        Invocation.method(
+          #isWebPlatform,
+          [],
+        ),
+        returnValue: false,
+      ) as bool);
+}

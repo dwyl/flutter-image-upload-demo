@@ -10,15 +10,16 @@ final imageKey = UniqueKey();
 
 // coverage:ignore-start
 void main() {
-  runApp(MyApp(imageFilePicker: ImageFilePicker(), client: http.Client()));
+  runApp(MyApp(imageFilePicker: ImageFilePicker(), client: http.Client(), platformService: PlatformService(),));
 }
 // coverage:ignore-end
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.imageFilePicker, required this.client});
+  const MyApp({super.key, required this.imageFilePicker, required this.client, required this.platformService});
 
   final ImageFilePicker imageFilePicker;
   final http.Client client;
+  final PlatformService platformService;
 
   @override
   Widget build(BuildContext context) {
@@ -28,16 +29,17 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
         useMaterial3: true,
       ),
-      home: MyHomePage(imageFilePicker: imageFilePicker, client: client),
+      home: MyHomePage(imageFilePicker: imageFilePicker, client: client, platformService: platformService),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.imageFilePicker, required this.client});
+  const MyHomePage({super.key, required this.imageFilePicker, required this.client, required this.platformService});
 
   final ImageFilePicker imageFilePicker;
   final http.Client client;
+  final PlatformService platformService;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -55,7 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
       isLoading = true;
     });
 
-    APIResponse? response = await openImagePickerDialog(widget.imageFilePicker, widget.client);
+    APIResponse? response = await openImagePickerDialog(widget.imageFilePicker, widget.client, widget.platformService);
 
     if (response == null) {
       setState(() {
