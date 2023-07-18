@@ -729,7 +729,7 @@ so it supports uploading the image on web-based browsers.
 
 To change the behaviour of our application according to the platform,
 we can use the constant [`kIsWeb`](https://api.flutter.dev/flutter/foundation/kIsWeb-constant.html),
-which is a constant that returns true if the application was compiled to run on the web.
+that returns true if the application was compiled to run on the web.
 
 Therefore, in order to make our code behave differently and *testable*,
 we are going to create a small class `PlatformService`,
@@ -802,8 +802,9 @@ Future<APIResponse?> openImagePickerDialog(ImageFilePicker imageFilePicker, http
 This function now receives an instance 
 of the newly-created `PlatformService` class.
 
-We've added an `if` statement checking the platform.
-If it's the case, instead of creating a `File` object like we do on mobile platforms,
+We've added an `if` statement which checks the current platform.
+If it's the case that's a web-based one, 
+instead of creating a `File` object like we do on mobile platforms,
 we simply fetch the `bytes` array directly from the `FilePickerResult` object
 yielded by the `imageFilePicker`.
 
